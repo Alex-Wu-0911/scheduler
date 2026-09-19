@@ -1,0 +1,12 @@
+flowchart TD
+    A["Worker 独立线程<br/>每 2 秒尝试发送 HEARTBEAT"] --> B{"Scheduler 已登记该 ID？"}
+    B -->|否| C["ERROR：WORKER_NOT_REGISTERED"]
+    B -->|是| D["更新 lastHeartbeat"]
+    D --> E{"当前为 SUSPECTED_DEAD？"}
+    E -->|是| F["恢复 ALIVE，打印 recovered"]
+    E -->|否| G["保持 ALIVE"]
+    F --> H["回复 HEARTBEAT_ACK"]
+    G --> H
+    I["Scheduler 每 1 秒检查"] --> J{"距上次心跳超过 5 秒<br/>且当前为 ALIVE？"}
+    J -->|是| K["设为 SUSPECTED_DEAD<br/>后续分发不再选择它"]
+    J -->|否| L["保持现有状态"]

@@ -1,0 +1,25 @@
+flowchart LR
+    C["Client 进程"] -->|SUBMIT| SC
+    subgraph S["Scheduler 进程：8080"]
+        SC["connectionPool<br/>解析 SUBMIT / REGISTER / HEARTBEAT"]
+        T["tasks<br/>ConcurrentHashMap"]
+        W["workers<br/>ConcurrentHashMap"]
+        D["dispatchTask<br/>发送任务并等待接收确认"]
+        F["failureDetector<br/>每 1 秒检查心跳"]
+        SC --> T
+        SC --> W
+        SC --> D
+        W -->|选择一个 ALIVE Worker| D
+        F --> W
+    end
+    subgraph WK["Worker 进程：9001"]
+        WC["connectionPool<br/>2 个连接处理线程"]
+        TP["taskPool<br/>3 个执行线程 + 10 个排队位置"]
+        E["executeTask<br/>模拟执行并打印日志"]
+        H["heartbeatExecutor<br/>独立心跳线程"]
+        WC --> TP --> E
+    end
+    D -->|EXECUTE| WC
+    WC -->|ACCEPTED 或 SERVER_BUSY| D
+    H -->|HEARTBEAT| SC
+    SC -->|提交结果| C

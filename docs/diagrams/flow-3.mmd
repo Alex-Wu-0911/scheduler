@@ -1,0 +1,19 @@
+flowchart TD
+    A["收到 SUBMIT 请求"] --> B{"字段数为 3？"}
+    B -->|否| B1["ERROR：INVALID_SUBMIT"]
+    B -->|是| C{"durationMs 能解析为 int？"}
+    C -->|否| C1["ERROR：INVALID_DURATION"]
+    C -->|是| D["创建 Task，初始状态 PENDING"]
+    D --> E{"ID 合法且时长非负？"}
+    E -->|否| E1["INVALID_TASK"]
+    E -->|是| F["tasks.putIfAbsent 原子去重"]
+    F --> G{"任务 ID 已存在？"}
+    G -->|是| G1["DUPLICATE"]
+    G -->|否| H{"找到 ALIVE Worker？"}
+    H -->|否| H1["移除本次任务记录<br/>NO_AVAILABLE_WORKER"]
+    H -->|是| I["dispatchTask<br/>连接超时 2 秒，读取超时 2 秒"]
+    I --> J["发送 EXECUTE，等待 Worker 回复"]
+    J --> K{"收到的回复"}
+    K -->|ACCEPTED 且 ID 匹配| L["状态设为 DISPATCHED<br/>返回 ACCEPTED"]
+    K -->|SERVER_BUSY 且 ID 匹配| M["移除本次任务记录<br/>返回 SERVER_BUSY"]
+    K -->|其他回复、断开或 IOException| N["保留任务 ID<br/>状态设为 DISPATCH_UNKNOWN<br/>返回 DISPATCH_UNKNOWN"]

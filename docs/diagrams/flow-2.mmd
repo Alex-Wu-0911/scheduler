@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant SM as scheduler.Main
+    participant S as Scheduler
+    participant W as Worker
+    SM->>S: start(8080)
+    Note over S: 监听 TCP，启动每秒一次的故障检测
+    Note over W: main 创建 worker-1，调用 start
+    W->>W: 先绑定监听端口 9001
+    W->>S: REGISTER|worker-1|localhost|9001
+    S->>S: 校验参数，workers.putIfAbsent
+    alt 新 Worker
+        S-->>W: REGISTERED|worker-1
+        Note over S: 初始状态 ALIVE，记录当前心跳时间
+        W->>W: 启动心跳，再进入 accept 循环
+    else ID 已存在
+        S-->>W: ALREADY_REGISTERED|worker-1
+        W->>W: 注册失败，退出并清理线程池
+    else 参数不合法
+        S-->>W: ERROR|INVALID_REGISTER 或 INVALID_PORT
+        W->>W: 注册失败，退出并清理线程池
+    end

@@ -1,0 +1,4 @@
+stateDiagram-v2
+    [*] --> PENDING: 创建 Task
+    PENDING --> DISPATCHED: Worker 明确确认接收
+    PENDING --> DISPATCH_UNKNOWN: 未获得可靠确认

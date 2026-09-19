@@ -1,0 +1,17 @@
+flowchart TD
+    A["ServerSocket.accept 接收连接"] --> B{"connectionPool 接受连接处理任务？"}
+    B -->|否| C["关闭连接，不发送 SERVER_BUSY"]
+    B -->|是| D["handleTask 读取一行请求<br/>读取超时 3 秒"]
+    D --> E{"EXECUTE 格式、ID、时长合法？"}
+    E -->|否| F["返回 ERROR<br/>INVALID_EXECUTE 或 INVALID_DURATION"]
+    E -->|是| G["taskPool.execute 提交任务"]
+    G --> H{"执行线程池能接收？"}
+    H -->|否| I["AbortPolicy 抛出拒绝异常<br/>回复 SERVER_BUSY"]
+    H -->|是| J["回复 ACCEPTED<br/>关闭本次连接"]
+    H -->|是，异步执行| K["执行线程运行任务<br/>需要时先进入容量 10 的队列"]
+    K --> L["打印 starts，Thread.sleep 模拟工作"]
+    L --> M{"是否被中断？"}
+    M -->|否| N["打印 completed"]
+    M -->|是| O["恢复线程中断标志<br/>打印 interrupted"]
+    N --> P["线程继续处理后续任务"]
+    O --> P
